@@ -1,19 +1,15 @@
+import json
 import os
 
-from flask import Flask, render_template, flash, request, redirect, url_for
+from flask import (
+    Flask, session, render_template, flash, request, redirect, url_for)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET", "not a secret")
 
 MAX_ATTEMPTS = 3
-RIDDLES = [
-    {"question": "Who?", "answer": "doctor"},
-    {"question": "Why?", "answer": "why not"},
-    {"question": "When?", "answer": "future"},
-    {"question": "What?", "answer": "watt"},
-]
-
-game_state = dict()
+with open("data/riddles.json") as riddle_file:
+    RIDDLES = json.load(riddle_file)
 
 
 @app.route("/")
@@ -23,46 +19,47 @@ def index():
 
 @app.route("/new_game", methods=["POST"])
 def new_game():
-    player = request.form["player"]
-    game_state[player] = {
-        "score": 0,
-        "riddle_num": 0,
-        "riddle_attempts": MAX_ATTEMPTS,
-    }
-    return redirect(url_for("riddle", player=player))
+    session["player"] = request.form["player"]
+    session["score"] = 0
+    session["riddle_num"] = 0
+    session["riddle_attempts"] = MAX_ATTEMPTS
+    return redirect(url_for("riddle"))
 
 
-@app.route("/riddle/<player>", methods=["GET", "POST"])
-def riddle(player):
-    if player not in game_state:
+@app.route("/riddle", methods=["GET", "POST"])
+def riddle():
+    if "player" not in session:
         return redirect(url_for("index"))
 
-    player_state = game_state[player]
-
-    if request.method == "POST" and player_state["riddle_num"] < len(RIDDLES):
-        previous_riddle = RIDDLES[player_state["riddle_num"]]
+    if request.method == "POST" and session["riddle_num"] < len(RIDDLES):
+        previous_riddle = RIDDLES[session["riddle_num"]]
         if request.form["answer"].lower() == previous_riddle["answer"]:
-            player_state["riddle_num"] += 1
-            player_state["score"] += 1
-            flash("Correct answer, %s! Your score is %s." % (
-                  player, player_state["score"]))
-        elif not player_state["riddle_attempts"]:
-            flash("Wrong answer, %s. Better luck with the next riddle." % (
-                  player))
-            player_state["riddle_num"] += 1
-            player_state["riddle_attempts"] = MAX_ATTEMPTS
+            session["riddle_num"] += 1
+            session["score"] += 1
+            if session["riddle_num"] < len(RIDDLES):
+                flash("Correct answer, %s! Your score is %s." % (
+                      session["player"], session["score"]))
+            else:
+                flash("Correct answer, %s!" % session["player"])
+        elif not session["riddle_attempts"]:
+            session["riddle_num"] += 1
+            session["riddle_attempts"] = MAX_ATTEMPTS
+            if session["riddle_num"] < len(RIDDLES):
+                flash("Wrong answer, %s. Better luck with this riddle:" % (
+                      session["player"]))
         else:
-            player_state["riddle_attempts"] -= 1
+            session["riddle_attempts"] -= 1
             flash("Wrong answer, %s. You have %s attempts left." % (
-                  player, player_state["riddle_attempts"]))
+                  session["player"], session["riddle_attempts"]))
 
-    if player_state["riddle_num"] >= len(RIDDLES):
-        return render_template("game_over.html", player=player)
+    if session["riddle_num"] >= len(RIDDLES):
+        return render_template("game_over.html", player=session["player"],
+                               score=session["score"])
 
-    new_riddle = RIDDLES[player_state["riddle_num"]]
+    new_riddle = RIDDLES[session["riddle_num"]]
     return render_template(
-        "riddle.html", player=player,
-        question=new_riddle["question"], player_state=player_state)
+        "riddle.html", player=session["player"],
+        question=new_riddle["question"], riddle_num=session["riddle_num"])
 
 
 if __name__ == "__main__":

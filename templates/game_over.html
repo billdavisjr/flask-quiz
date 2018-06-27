@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="alert alert-success" role="alert" class="row">
-        Congratulations {{ player }}, you've completed the game!
+        Congratulations {{ player }}, you've completed the game! Your final score is {{ score }}
     </div>
     <form method="POST" action="{{ url_for('new_game') }}" class="row">
         <input type="hidden" name="player" value="{{ player }}">

@@ -10,9 +10,10 @@
 </head>
 <body>
     <nav class="navbar navbar-dark bg-dark mb-4">
-        <span class="navbar-brand">Riddle game</span>
-        <ul class="navbar-nav mr-auto">
+        <a href="{{ url_for('index') }}" class="navbar-brand">Riddle game</a>
+        <ul class="nav">
             <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('riddle') }}">Riddles</a></li>
         </ul>
     </nav>
     <div class="container">

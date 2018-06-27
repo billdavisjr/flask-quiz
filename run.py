@@ -11,6 +11,11 @@ MAX_ATTEMPTS = 3
 with open("data/riddles.json") as riddle_file:
     RIDDLES = json.load(riddle_file)
 
+high_score = {
+    "name": "nobody",
+    "score": 0
+}
+
 
 @app.route("/")
 def index():
@@ -53,8 +58,13 @@ def riddle():
                   session["player"], session["riddle_attempts"]))
 
     if session["riddle_num"] >= len(RIDDLES):
+        if session["score"] >= high_score["score"]:
+            high_score["score"] = session["score"]
+            high_score["name"] = session["player"]
         return render_template("game_over.html", player=session["player"],
-                               score=session["score"])
+                               score=session["score"],
+                               highscore=high_score["score"],
+                               highscorer=high_score["name"])
 
     new_riddle = RIDDLES[session["riddle_num"]]
     return render_template(
